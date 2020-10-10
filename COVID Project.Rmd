@@ -8,19 +8,24 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(coronavirus)
+# https://cran.r-project.org/web/packages/coronavirus/coronavirus.pdf
 ```
 
 ```{r}
-d1 <- data.frame(coronavirus)
-dUS <- subset(d1,country=="US")
-dUSC <- subset(dUS,type=="confirmed")
-dUSD <- subset(dUS,type=="death")
-dUSR <- subset(dUS,type=="recovered")
-dUSC$days <- seq(1:nrow(dUSC)) #days since (and including) January 21 2020
-dUSD$days <- seq(1:nrow(dUSD)) #days since (and including) January 21 2020
-dUSR$days <- seq(1:nrow(dUSR)) #days since (and including) January 21 2020
-plot(dUSC$days,dUSC$cases)
-plot(dUSD$days,dUSD$cases)
-plot(dUSR$days,dUSR$cases)
+d1 <- data.frame(coronavirus) #COVID around the world
+dUS <- subset(d1,country=="US") #COVID in the US
 
+dUSC <- subset(dUS,type=="confirmed") #confirmed cases in the US
+dUSD <- subset(dUS,type=="death") #death cases in the US
+dUSR <- subset(dUS,type=="recovered") #recovered cases in the US
+
+dUSC$days <- seq(1:nrow(dUSC)) #days since (and including) January 21 2020 (US confirmed)
+dUSD$days <- seq(1:nrow(dUSD)) #days since (and including) January 21 2020 (US death)
+dUSR$days <- seq(1:nrow(dUSR)) #days since (and including) January 21 2020 (US recovered)
+
+plot(dUSC$days,dUSC$cases) #confirmed cases by days
+plot(dUSD$days,dUSD$cases) #death cases by days
+plot(dUSR$days,dUSR$cases) #recovered cases by days
+
+plot(d1$lat,d1$long) #could put this over a world map
 ```
