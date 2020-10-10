@@ -1,5 +1,5 @@
 # ReproducibilityRaptors
-ReproducibilityRaptors Project Team for STAT 5014 Fall 2020
+ReproducibilityRaptors Project Team for STAT 5014 Fall 2020 (Danielle Sebring, Ankur Patel, Andy Cooper)
 
 The main goal of our project will be to create a real-time dashboard of COVID case data using RShiny. We will create an interactive time series figure with the ability for user to filter through features including but not limited to patient race, patient age, patient location, number of US cases, and number of global cases. We will also attempt to create heat maps indicating the density of COVID cases across the country. Finally, we will report summary statistics including but not limited to means, medians, variances, infection rate, cumulative number of cases and/or deaths, and autocorrelation. 
 
