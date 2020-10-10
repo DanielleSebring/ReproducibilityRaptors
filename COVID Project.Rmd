@@ -12,6 +12,8 @@ library(coronavirus)
 ```
 
 ```{r}
+get_info_coronavirus()
+
 d1 <- data.frame(coronavirus) #COVID around the world
 dUS <- subset(d1,country=="US") #COVID in the US
 
