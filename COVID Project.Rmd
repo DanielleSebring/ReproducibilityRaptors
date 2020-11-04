@@ -9,7 +9,17 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 library(coronavirus)
 # https://cran.r-project.org/web/packages/coronavirus/coronavirus.pdf
+
+
+library(utils)
+# https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide
+
+
+library(RSocrata)
+# https://www.vdh.virginia.gov/coronavirus/
 ```
+
+
 
 ```{r}
 get_info_coronavirus()
@@ -31,3 +41,30 @@ plot(dUSR$days,dUSR$cases) #recovered cases by days
 
 plot(d1$lat,d1$long) #could put this over a world map
 ```
+
+
+
+```{r}
+### awesome worldwide case data
+WorldData <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM")
+head(data)
+```
+
+
+```{r}
+#virginia data -- only showing 1000 rows 6 cols
+Vrace <- read.csv("https://data.virginia.gov/resource/9sba-m86n.csv")
+Vage <- read.csv("https://data.virginia.gov/resource/uktn-mwig.csv")
+Vsex <- read.csv("https://data.virginia.gov/resource/tdt3-q47w.csv")
+
+
+
+```
+
+
+
+
+
+
+
+
