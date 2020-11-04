@@ -37,5 +37,5 @@ va_merged <- rbind(va_bysex_clean, va_byrace_clean) %>%
                                            "number_of_deaths"),
                                 labels = c("cases", "hospitalizations", "deaths")))
 
-saveRDS(va_merged, "/cloud/project/ReproducibilityRaptors/data/va_covid.csv")
+saveRDS(va_merged, "/cloud/project/ReproducibilityRaptors/data/va_covid")
 

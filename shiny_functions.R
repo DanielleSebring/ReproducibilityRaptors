@@ -76,3 +76,5 @@ timeseries_df <- json_data %>%
 
 
 timeseries_df %>% gather(date, cases, -county)
+
+
