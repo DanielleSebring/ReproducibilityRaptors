@@ -52,13 +52,11 @@ head(data)
 
 
 ```{r}
-#virginia data -- only showing 1000 rows 6 cols
-Vrace <- read.csv("https://data.virginia.gov/resource/9sba-m86n.csv")
-Vage <- read.csv("https://data.virginia.gov/resource/uktn-mwig.csv")
-Vsex <- read.csv("https://data.virginia.gov/resource/tdt3-q47w.csv")
-
-
-
+#virginia data -- using API
+library(RSocrata)
+Vsex <- read.socrata("https://data.virginia.gov/resource/tdt3-q47w.json")
+Vrace <- read.socrata("https://data.virginia.gov/resource/9sba-m86n.json")
+Vage <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
 ```
 
 
