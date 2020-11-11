@@ -54,9 +54,14 @@ head(data)
 ```{r}
 #virginia data -- using API
 library(RSocrata)
+library(ggplot2)
 Vsex <- read.socrata("https://data.virginia.gov/resource/tdt3-q47w.json")
 Vrace <- read.socrata("https://data.virginia.gov/resource/9sba-m86n.json")
 Vage <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
+
+#the easiest but still meaningful approach would be to look at these marginally and create separate interactive plots on the dashboard
+#do we want to model something here? 
+
 ```
 
 
