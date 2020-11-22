@@ -1,0 +1,73 @@
+---
+title: "COVID Project"
+author: "Danielle Sebring"
+date: "10/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(coronavirus)
+# https://cran.r-project.org/web/packages/coronavirus/coronavirus.pdf
+
+
+library(utils)
+# https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide
+
+
+library(RSocrata)
+# https://www.vdh.virginia.gov/coronavirus/
+```
+
+
+
+```{r}
+get_info_coronavirus()
+
+d1 <- data.frame(coronavirus) #COVID around the world
+dUS <- subset(d1,country=="US") #COVID in the US
+
+dUSC <- subset(dUS,type=="confirmed") #confirmed cases in the US
+dUSD <- subset(dUS,type=="death") #death cases in the US
+dUSR <- subset(dUS,type=="recovered") #recovered cases in the US
+
+dUSC$days <- seq(1:nrow(dUSC)) #days since (and including) January 21 2020 (US confirmed)
+dUSD$days <- seq(1:nrow(dUSD)) #days since (and including) January 21 2020 (US death)
+dUSR$days <- seq(1:nrow(dUSR)) #days since (and including) January 21 2020 (US recovered)
+
+plot(dUSC$days,dUSC$cases) #confirmed cases by days
+plot(dUSD$days,dUSD$cases) #death cases by days
+plot(dUSR$days,dUSR$cases) #recovered cases by days
+
+plot(d1$lat,d1$long) #could put this over a world map
+```
+
+
+
+```{r}
+### awesome worldwide case data
+WorldData <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM")
+head(data)
+```
+
+
+```{r}
+#virginia data -- using API
+library(RSocrata)
+library(ggplot2)
+Vsex <- read.socrata("https://data.virginia.gov/resource/tdt3-q47w.json")
+Vrace <- read.socrata("https://data.virginia.gov/resource/9sba-m86n.json")
+Vage <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
+
+#the easiest but still meaningful approach would be to look at these marginally and create separate interactive plots on the dashboard
+#do we want to model something here? 
+
+```
+
+
+
+
+
+
+
+
