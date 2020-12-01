@@ -1,6 +1,5 @@
 library(tidyverse)
 
-
 # Create moving bar-plots
 
 va_totals <- va_covid %>% 
