@@ -6,50 +6,9 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-# knitr::opts_chunk$set(echo = TRUE)
-# library(coronavirus)
-# # https://cran.r-project.org/web/packages/coronavirus/coronavirus.pdf
-# 
-# 
-# library(utils)
-# # https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide
-
-
-library(RSocrata)
+## Virginia coronavirus data ##
 # https://www.vdh.virginia.gov/coronavirus/
 ```
-
-
-
-```{r eval=F}
-get_info_coronavirus()
-
-d1 <- data.frame(coronavirus) #COVID around the world
-dUS <- subset(d1,country=="US") #COVID in the US
-
-dUSC <- subset(dUS,type=="confirmed") #confirmed cases in the US
-dUSD <- subset(dUS,type=="death") #death cases in the US
-dUSR <- subset(dUS,type=="recovered") #recovered cases in the US
-
-dUSC$days <- seq(1:nrow(dUSC)) #days since (and including) January 21 2020 (US confirmed)
-dUSD$days <- seq(1:nrow(dUSD)) #days since (and including) January 21 2020 (US death)
-dUSR$days <- seq(1:nrow(dUSR)) #days since (and including) January 21 2020 (US recovered)
-
-plot(dUSC$days,dUSC$cases) #confirmed cases by days
-plot(dUSD$days,dUSD$cases) #death cases by days
-plot(dUSR$days,dUSR$cases) #recovered cases by days
-
-plot(d1$lat,d1$long) #could put this over a world map
-```
-
-
-
-```{r eval=F}
-### awesome worldwide case data
-WorldData <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM")
-head(data)
-```
-
 
 ```{r}
 #virginia data -- using API
@@ -105,18 +64,38 @@ saveRDS(va_complete, "va_covid")
 
 ```
 
-
-```{r}
-####### I don't think a mosaic will be useful ##########
-library(ggplot2)
-library(ggmosaic)
-va_data <- readRDS("va_covid")
-ggplot(data =  va_data) +
-  geom_mosaic(aes(x = product(demographic,level), fill= factor(statistic)), na.rm=TRUE) +
-  scale_fill_discrete("")+
-  labs(x = "Health District", y = "Demographic", title='')+ theme_bw()
+```{r eval=F, include=F}
+########## two other data sets we considered ################
+# knitr::opts_chunk$set(echo = TRUE)
+# library(coronavirus)
+# # https://cran.r-project.org/web/packages/coronavirus/coronavirus.pdf
+# get_info_coronavirus()
+# 
+# d1 <- data.frame(coronavirus) #COVID around the world
+# dUS <- subset(d1,country=="US") #COVID in the US
+# 
+# dUSC <- subset(dUS,type=="confirmed") #confirmed cases in the US
+# dUSD <- subset(dUS,type=="death") #death cases in the US
+# dUSR <- subset(dUS,type=="recovered") #recovered cases in the US
+# 
+# dUSC$days <- seq(1:nrow(dUSC)) #days since (and including) January 21 2020 (US confirmed)
+# dUSD$days <- seq(1:nrow(dUSD)) #days since (and including) January 21 2020 (US death)
+# dUSR$days <- seq(1:nrow(dUSR)) #days since (and including) January 21 2020 (US recovered)
+# 
+# plot(dUSC$days,dUSC$cases) #confirmed cases by days
+# plot(dUSD$days,dUSD$cases) #death cases by days
+# plot(dUSR$days,dUSR$cases) #recovered cases by days
+# 
+# plot(d1$lat,d1$long) #could put this over a world map
+# 
+# 
+# library(utils)
+# # https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide
+# 
+# WorldData <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM")
+# head(data)
+##############################################################
 ```
-
 
 
 
