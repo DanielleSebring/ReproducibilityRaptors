@@ -9,7 +9,8 @@ library(animation)
 library(shinydashboard)
 library(grid)
 library(gridExtra)
-
+library(RColorBrewer)
+library(usmap)
 
 va_covid <- read_rds("data/va_covid")
 
@@ -30,36 +31,58 @@ plot_timeseries <- function(df){
   df %>% 
     ggplot(aes(x = date, y = count, fill = level)) + 
     geom_area(alpha = 0.8) +
-    theme(panel.background = element_blank())
+    theme(panel.background = element_blank()) + 
+    scale_fill_brewer(palette = "Dark2")
 }
 
-plot_demographics <- function(df){
+
+plot_demographics <- function(df, district){
   df_summarized <- df %>% 
     group_by(level) %>% 
     summarize(count = count %>% diff())
-  p1 <- df %>%  
-    ggplot(aes(x = "", y = count, fill = level)) +
-    geom_bar(stat = "identity", width = 1) +
-    coord_polar("y", start = 0) + 
-    theme(panel.background = element_blank())
-  p2 <- df_summarized %>% 
-    ggplot(aes(y = count, by = level)) + 
-    geom_histogram(bins = 6) + 
-    coord_flip() +
-    facet_wrap(~ level) +
-    theme(panel.background = element_blank())
-  grid.arrange(p1, p2, nrow = 1)
+  va_map_dat <- va_covid %>% 
+    group_by(health_district) %>% 
+    summarize(lon = mean(longitude),
+              lat = mean(latitude),
+              pop = mean(total_population)) %>%
+    relocate(health_district, .after = last_col()) %>% 
+    usmap_transform()
+  p <- plot_usmap("counties", include = c("VA")) + 
+    geom_point(data = va_map_dat, aes(x = lon.1, y = lat.1, size = pop),
+               color = "orange", alpha = 1) +
+    geom_point(data = va_map_dat %>% filter(health_district == district), 
+               aes(x = lon.1, y = lat.1), 
+               size = 10, color = "red") +
+    theme(legend.position = "none")
+  print(p, vp = viewport(angle = -15))
 }
 
-plot_arima <- function(df, model){
-  df %>% 
+
+plot_arima <- function(df, model, end_date){
+  
+  future_dates <- seq(end_date, end_date + 29, by = "day")
+  model_forecast <- predict(model, n.ahead = 30)
+  forecast_df <- data_frame(mean = model_forecast$pred) %>% 
+    mutate(lwr = mean - 1.96*model_forecast$se,
+           upr = mean + 1.96*model_forecast$se,
+           future_dates = future_dates)
+  
+  fitted_df <- df %>% 
     mutate(fitted_vals = fitted(model)) %>% 
-    gather(type, value, `sum(count)`, fitted_vals) %>% 
-    ggplot(aes(x = date, y = value, color = type)) + 
+    gather(type, value, `sum(count)`, fitted_vals)
+  
+  p <- ggplot(data = fitted_df, aes(x = date, y = value, color = type)) + 
     geom_line(size = 1.3) +
     scale_color_manual(values = c("red", "black")) +
     theme(panel.background = element_blank())
+  
+  p + geom_ribbon(data = forecast_df, aes(x = future_dates, ymin = lwr, ymax = upr), inherit.aes = F,
+                  fill = "orange", alpha = 0.3) + 
+    geom_line(data = forecast_df, aes(x = future_dates, y = mean), inherit.aes = F, color = "red",
+              lwd = 1.3)
 }
+
+
 
 plot_diagnostics <- function(model){
   p1 <- autoplot(residuals(model)) + 
@@ -154,11 +177,11 @@ server <- function(input, output, session){
   })
   
   output$demo_breakdown <- renderPlot({
-    plot_demographics(state$trend_data)
+    plot_demographics(state$trend_data, input$district)
   })
   
   output$arima <- renderPlot({
-    plot_arima(state$arima_data, state$model_fit)
+    plot_arima(state$arima_data, state$model_fit, input$date[2])
   })
   
   output$diag <- renderPlot({
