@@ -14,95 +14,15 @@ library(usmap)
 
 va_covid <- read_rds("data/va_covid")
 
-
-# Shiny functions for data manipulation and plotting
-
-get_numbers <- function(df, start, end, hd, demo, stat){
-  df_filtered <- df %>%
-    filter(date >= start, date <= end, 
-           health_district == hd,
-           demographic == demo,
-           statistic == stat)
-  return(df_filtered)
-}
-
-
-plot_timeseries <- function(df){
-  df %>% 
-    ggplot(aes(x = date, y = count, fill = level)) + 
-    geom_area(alpha = 0.8) +
-    theme(panel.background = element_blank()) + 
-    scale_fill_brewer(palette = "Dark2")
-}
-
-
-plot_demographics <- function(df, district){
-  df_summarized <- df %>% 
-    group_by(level) %>% 
-    summarize(count = count %>% diff())
-  va_map_dat <- va_covid %>% 
-    group_by(health_district) %>% 
-    summarize(lon = mean(longitude),
-              lat = mean(latitude),
-              pop = mean(total_population)) %>%
-    relocate(health_district, .after = last_col()) %>% 
-    usmap_transform()
-  p <- plot_usmap("counties", include = c("VA")) + 
-    geom_point(data = va_map_dat, aes(x = lon.1, y = lat.1, size = pop),
-               color = "orange", alpha = 1) +
-    geom_point(data = va_map_dat %>% filter(health_district == district), 
-               aes(x = lon.1, y = lat.1), 
-               size = 10, color = "red") +
-    theme(legend.position = "none")
-  print(p, vp = viewport(angle = -15))
-}
-
-
-plot_arima <- function(df, model, end_date){
-  
-  future_dates <- seq(end_date, end_date + 29, by = "day")
-  model_forecast <- predict(model, n.ahead = 30)
-  forecast_df <- data_frame(mean = model_forecast$pred) %>% 
-    mutate(lwr = mean - 1.96*model_forecast$se,
-           upr = mean + 1.96*model_forecast$se,
-           future_dates = future_dates)
-  
-  fitted_df <- df %>% 
-    mutate(fitted_vals = fitted(model)) %>% 
-    gather(type, value, `sum(count)`, fitted_vals)
-  
-  p <- ggplot(data = fitted_df, aes(x = date, y = value, color = type)) + 
-    geom_line(size = 1.3) +
-    scale_color_manual(values = c("red", "black")) +
-    theme(panel.background = element_blank())
-  
-  p + geom_ribbon(data = forecast_df, aes(x = future_dates, ymin = lwr, ymax = upr), inherit.aes = F,
-                  fill = "orange", alpha = 0.3) + 
-    geom_line(data = forecast_df, aes(x = future_dates, y = mean), inherit.aes = F, color = "red",
-              lwd = 1.3)
-}
-
-
-
-plot_diagnostics <- function(model){
-  p1 <- autoplot(residuals(model)) + 
-    geom_abline(slope = 0, intercept = 0, col = "red") + 
-    theme(panel.background = element_blank())
-  p2 <- ggAcf(residuals(model)) + 
-    theme(panel.background = element_blank())
-  p3 <- ggPacf(residuals(model)) + 
-    theme(panel.background = element_blank())
-  grid.arrange(p1, p2, p3, 
-               layout_matrix = rbind(c(1, 1),
-                                     c(2, 3)))
-}
-
+source("shiny_functions.R")
 
 
 # Shiny app
 
 body <- dashboardBody(
+  
   fluidRow(
+    
     box(
       title = "COVID-19 Trends by Demographic",
       width = 2,
@@ -116,36 +36,62 @@ body <- dashboardBody(
       radioButtons("demo", "Demographic", 
                    choices = va_covid$demographic %>% unique())
     ),
-    box(width = 5,
+    
+    box(title = "Timeseries Stacked by Demographic",
+        width = 5,
         plotOutput("timeseries")
     ),
-    box(width = 5,
-        plotOutput("demo_breakdown"))
+    
+    box(
+      title = "Red dot represents currently selected health district",
+      width = 5,
+      plotOutput("demo_breakdown"))
   ),
   
   fluidRow(
-    box(title = "ARIMA Model-Fitting",
-        width = 2,
-        sliderInput("p", "Lag Degree (p)",
-                    min = 0, max = 3,
-                    value = 0),
-        sliderInput("d", "Order of Differencing (d)",
-                    min = 0, max = 3,
-                    value = 0),
-        sliderInput("q", "Number of Moving Average Terms (q)",
-                    min = 0, max = 3,
-                    value = 0)
+    
+    tabBox(title = "ARIMA Model-Fitting",
+           width = 2,
+           tabPanel("Non-Seasonal", "Non-Seasonal Parameters",
+                    sliderInput("p", "Lag Degree (p)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("d", "Order of Differencing (d)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("q", "Number of Moving Average Terms (q)",
+                                min = 0, max = 3,
+                                value = 0)
+           ),
+           
+           tabPanel("Seasonal", "Seasonal Parameters",
+                    selectInput("period", NULL, 
+                                choices = list("Weekly" = 7, "Bi-Weekly" = 14, 
+                                               "Monthly" = 30, "Bi-Monthly" = 60,
+                                               "Tri-Monthly" = 90),
+                                selected = 30),
+                    sliderInput("sp", "Lag Degree (p)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("sd", "Order of Differencing (d)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("sq", "Number of Moving Average Terms (q)",
+                                min = 0, max = 3,
+                                value = 0)
+           )
     ),
-    box(width = 5,
+    
+    box(title = "ARIMA Forecast",
+        width = 5,
         plotOutput("arima")
     ),
-    box(width = 5,
+    
+    box(title = "ARIMA Diagnostic Plots",
+        width = 5,
         plotOutput("diag"))
-  ),
-  
-  fluidRow(
-    imageOutput("image1")
   )
+  
 )
 
 ui <-  dashboardPage(
@@ -163,14 +109,22 @@ server <- function(input, output, session){
     model_fit  = list()
   )
   
+  
+  
   observe({
-    state$trend_data <- get_numbers(va_covid, input$date[1], input$date[2], input$district, input$demo, input$stat)
+    state$trend_data <- get_numbers(va_covid, input$date[1], input$date[2], 
+                                    input$district, input$demo, input$stat)
     state$arima_data <- state$trend_data %>%   
       group_by(date) %>% 
       summarize(sum(count)) %>% 
       mutate(`sum(count)` = c(0, diff(`sum(count)`)))
-    state$model_fit  <- Arima(state$arima_data %>% .$"sum(count)", order = c(input$p, input$d, input$q))
+    state$model_fit  <- Arima(state$arima_data %>% .$"sum(count)", 
+                              order = c(input$p, input$d, input$q), 
+                              seasonal = list(order = c(input$sp, input$sd, input$sq), 
+                                              period = as.numeric(input$period)))
   })
+  
+
   
   output$timeseries <- renderPlot({
     plot_timeseries(state$trend_data)
