@@ -9,46 +9,23 @@ library(animation)
 library(shinydashboard)
 library(grid)
 library(gridExtra)
-
+library(RColorBrewer)
+library(usmap)
 
 va_covid <- read_rds("data/va_covid")
 
-
-# Shiny functions for data manipulation and plotting
-
-get_numbers <- function(df, start, end, hd, demo, stat){
-  df_filtered <- df %>%
-    filter(date >= start, date <= end, 
-           health_district == hd,
-           demographic == demo,
-           statistic == stat)
-  return(df_filtered)
-}
-
-
-plot_timeseries <- function(df){
-  df %>% 
-    ggplot(aes(x = date, y = count, fill = level)) + 
-    geom_area(alpha = 0.8)
-}
-
-
-fit_arima <- function(arima_data, stat, p, d, q){
-  arima_fit <- Arima(arima_data %>% .$"sum(count)", order = c(p, d, q))
-  p1 <- arima_data %>% 
-    mutate(count = c(0, `sum(count)` %>% diff())) %>% 
-    ggplot(aes(x = date, y = count)) + 
-    geom_line()
-  p2 <- ggAcf(residuals(arima_fit))
-  grid.arrange(p1, p2, nrow = 2)
-}
+source("shiny_functions.R")
 
 
 # Shiny app
 
 body <- dashboardBody(
+  
   fluidRow(
-    box(width = 3,
+    
+    box(
+      title = "COVID-19 Trends by Demographic",
+      width = 2,
       dateRangeInput("date", "Date Range", 
                      start = min(va_covid$date), end = max(va_covid$date),
                      min = min(va_covid$date), max = max(va_covid$date)),
@@ -59,34 +36,68 @@ body <- dashboardBody(
       radioButtons("demo", "Demographic", 
                    choices = va_covid$demographic %>% unique())
     ),
-    box(width = 5,
-      plotOutput("timeseries")
+    
+    box(title = "Timeseries Stacked by Demographic",
+        width = 5,
+        plotOutput("timeseries")
     ),
-    box(width = 4,
-        imageOutput("image1"))
+    
+    box(
+      title = "Red dot represents currently selected health district",
+      width = 5,
+      plotOutput("demo_breakdown"))
   ),
+  
   fluidRow(
-    box(width = 3,
-        sliderInput("p", "Lag Degree (p)",
-                    min = 0, max = 3,
-                    value = 0),
-        sliderInput("d", "Order of Differencing (d)",
-                    min = 0, max = 3,
-                    value = 0),
-        sliderInput("q", "Number of Moving Average Terms (q)",
-                    min = 0, max = 3,
-                    value = 0)
+    
+    tabBox(title = "ARIMA Model-Fitting",
+           width = 2,
+           tabPanel("Non-Seasonal", "Non-Seasonal Parameters",
+                    sliderInput("p", "Lag Degree (p)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("d", "Order of Differencing (d)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("q", "Number of Moving Average Terms (q)",
+                                min = 0, max = 3,
+                                value = 0)
+           ),
+           
+           tabPanel("Seasonal", "Seasonal Parameters",
+                    selectInput("period", NULL, 
+                                choices = list("Weekly" = 7, "Bi-Weekly" = 14, 
+                                               "Monthly" = 30, "Bi-Monthly" = 60,
+                                               "Tri-Monthly" = 90),
+                                selected = 30),
+                    sliderInput("sp", "Lag Degree (p)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("sd", "Order of Differencing (d)",
+                                min = 0, max = 3,
+                                value = 0),
+                    sliderInput("sq", "Number of Moving Average Terms (q)",
+                                min = 0, max = 3,
+                                value = 0)
+           )
     ),
-    box(width = 5,
+    
+    box(title = "ARIMA Forecast",
+        width = 5,
         plotOutput("arima")
-    )
+    ),
+    
+    box(title = "ARIMA Diagnostic Plots",
+        width = 5,
+        plotOutput("diag"))
   )
+  
 )
 
 ui <-  dashboardPage(
   skin = "red",
   dashboardHeader(titleWidth = 450, title = "Virginia COVID-19 Analysis Application"),
-  dashboardSidebar(),
+  dashboardSidebar(disable = T),
   body
 )
 
@@ -94,26 +105,45 @@ server <- function(input, output, session){
   
   state <- reactiveValues(
     trend_data = list(),
-    arima_data = list()
+    arima_data = list(),
+    model_fit  = list()
   )
   
+  
+  
   observe({
-    state$trend_data <- get_numbers(va_covid, input$date[1], input$date[2], input$district, input$demo, input$stat)
+    state$trend_data <- get_numbers(va_covid, input$date[1], input$date[2], 
+                                    input$district, input$demo, input$stat)
     state$arima_data <- state$trend_data %>%   
       group_by(date) %>% 
-      summarize(sum(count))
+      summarize(sum(count)) %>% 
+      mutate(`sum(count)` = c(0, diff(`sum(count)`)))
+    state$model_fit  <- Arima(state$arima_data %>% .$"sum(count)", 
+                              order = c(input$p, input$d, input$q), 
+                              seasonal = list(order = c(input$sp, input$sd, input$sq), 
+                                              period = as.numeric(input$period)))
   })
+  
+
   
   output$timeseries <- renderPlot({
     plot_timeseries(state$trend_data)
   })
   
+  output$demo_breakdown <- renderPlot({
+    plot_demographics(state$trend_data, input$district)
+  })
+  
   output$arima <- renderPlot({
-    fit_arima(state$arima_data, input$stat, input$p, input$d, input$q)
+    plot_arima(state$arima_data, state$model_fit, input$date[2])
+  })
+  
+  output$diag <- renderPlot({
+    plot_diagnostics(state$model_fit)
   })
   
   output$image1 <- renderImage({
-    return(list(src = "gganim.gif", height = "400px", width = "500px"))
+    return(list(src = "gganim.gif", height = "400px", width = "600px"))
   })
 }
 
