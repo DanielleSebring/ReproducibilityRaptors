@@ -24,34 +24,29 @@ summary_given_district <- function(X,district)
   X.district.hospital <- subset(X.district,statistic == "hospitalizations")
   X.district.deaths <- subset(X.district,statistic == "deaths")
   
-  #calculate the cumulative counts of cases, hospitalizations, and deaths
-  cum_count.cases <- cumsum(X.district.cases$count)
-  cum_count.hospital <- cumsum(X.district.hospital$count)
-  cum_count.deaths <- cumsum(X.district.deaths$count)
-  
-  #calculate the mean cases, hospitalizations, deaths for the health district
+  #calculate the mean cases, hospitalizations, deaths
   mean_cases <- mean(X.district.cases$count)
   mean_hospital <- mean(X.district.hospital$count)
   mean_deaths <- mean(X.district.deaths$count)
-  
-  #calculate the median cases, hospitalizations, deaths for the health district
+
+  #calculate the median cases, hospitalizations, deaths 
   median_cases <- median(X.district.cases$count)
   median_hospital <- median(X.district.hospital$count)
   median_deaths <- median(X.district.deaths$count)
   
-  #calculate the variance of the cases, hospitalizations, deaths for the health district
-  var_cases <- var(X.district.cases$count)
-  var_hospital <- var(X.district.hospital$count)
-  var_deaths <- var(X.district.deaths$count)
+  #calculate the standard deviation of the cases, hospitalizations, deaths 
+  sd_cases <- sd(X.district.cases$count)
+  sd_hospital <- sd(X.district.hospital$count)
+  sd_deaths <- sd(X.district.deaths$count)
   
   means <- rbind(mean_cases, mean_hospital,mean_deaths)
   medians <- rbind(median_cases,median_hospital,median_deaths)
-  variances <- rbind(var_cases,var_hospital,var_deaths)
+  standard_devs <- rbind(sd_cases,sd_hospital,sd_deaths)
   
-  summary <- data.frame(cbind(means,medians,variances))
-  names(summary) <- c("Means","Median","Variance")
+  summary <- data.frame(cbind(means,medians,standard_devs))
+  names(summary) <- c("Means","Median","Standard Deviation")
   rownames(summary) <- c("Cases","Hospitalizations","Deaths")
   return(summary)
 }
 
-summary_given_district(X = va_data,district = "Fairfax") %>% gt() %>% tab_header(title = "Summary Statistics") %>% fmt_number(columns = vars("Cases","Hospitalizations","Deaths"))
+#summary_given_district(X = va_data,district = "Fairfax") %>% gt() %>% tab_header(title = "Summary Statistics") %>% fmt_number(columns = vars("Cases","Hospitalizations","Deaths"))
