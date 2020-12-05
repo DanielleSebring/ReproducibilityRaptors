@@ -1,5 +1,4 @@
 library(tidyverse)
-library(usmap)
 
 # Shiny functions for data manipulation and plotting
 
