@@ -1,14 +1,15 @@
-library(tidyverse)
-library(shiny)
-library(shinydashboard)
-library(shinyBS)
-library(hrbrthemes)
-library(forecast)
-library(transformr)
-library(grid)
-library(gridExtra)
-library(RColorBrewer)
-library(usmap)
+require(tidyverse)
+require(shiny)
+require(shinydashboard)
+require(shinyBS)
+require(hrbrthemes)
+require(forecast)
+require(transformr)
+require(grid)
+require(gridExtra)
+require(RColorBrewer)
+require(usmap)
+require(rgdal)
 
 source("data_preparation.R")
 source("shiny_functions.R")
@@ -217,7 +218,8 @@ server <- function(input, output, session){
   
   addPopover(session, "arima", "ARIMA Forecasting",
              "The red line shows the fitted values according to the current ARIMA model. In addition it provides
-             a two-week forecast with an orange band representing the 95% confidence interval of the forecast.",
+             a two-week forecast with an orange band representing the 95% confidence interval of the forecast.
+             The goal is to create a model that captures the general trend of the data but doesn't 'overfit' it.",
              "top", options = list(container = "body"))
   
   output$diag <- renderPlot({
@@ -242,8 +244,9 @@ server <- function(input, output, session){
   output$analysis <- renderText({"ARIMA Model-Fitting"})
   
   addPopover(session, "analysis", "ARIMA Model-Fitting",
-             "'ARIMA' stands for 'Auto-Regressive Integrated Moving Average', named for its three components.
-             It is a modeling approach popular with time-series data due to its often highly correlated data.",
+             "'ARIMA' stands for 'Auto-Regressive Integrated Moving Average', named for its three components 'AR' 
+             (denoted by the letter 'p'), 'I' (denoted by the letter 'q', and 'MA' (denoted by the letter 'q')).
+             It is a modeling approach frequently applied to time-series data due to its often highly correlated data.",
              "right", options = list(container = "body"))
   
 }

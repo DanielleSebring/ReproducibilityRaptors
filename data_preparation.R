@@ -1,7 +1,7 @@
-library(tidyverse)
-library(janitor)
-library(lubridate)
-library(RSocrata)
+require(tidyverse)
+require(janitor)
+require(lubridate)
+require(RSocrata)
 
 
 "
@@ -85,7 +85,7 @@ load_covid_data <- function(){
   va_byage  <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
   va_pop    <- read_csv("data/VDH-Population_By_Health_District.csv")
   
-  va_covid <- merge_vadata(va_bysex, va_byrace, va_byage)
+  va_covid <- merge_vadata(va_bysex, va_byrace, va_byage, va_pop)
   saveRDS(va_covid, "data/va_covid")
   
 }
