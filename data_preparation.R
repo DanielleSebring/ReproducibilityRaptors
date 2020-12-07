@@ -70,7 +70,7 @@ merge_vadata <- function(dat_sex, dat_race, dat_age, dat_pop){
     select(-report_date)
   
   # Join with population data
-  va_complete <- inner_join(va_merged, va_pop, by = "health_district")
+  va_complete <- inner_join(va_merged, dat_pop, by = "health_district")
   
   return(va_complete)
   
