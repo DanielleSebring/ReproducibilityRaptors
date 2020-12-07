@@ -1,5 +1,5 @@
-library(tidyverse)
-library(gt)
+require(tidyverse)
+require(gt)
 
 " 
 This script contains all of the functions used by the Shiny app.
