@@ -10,6 +10,7 @@ require(gridExtra)
 require(RColorBrewer)
 require(usmap)
 require(rgdal)
+require(maptools)
 
 source("data_preparation.R")
 source("shiny_functions.R")
