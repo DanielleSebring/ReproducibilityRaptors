@@ -1,5 +1,7 @@
 library(tidyverse)
 
+va_covid <- read_rds("va_covid")
+
 # Shiny functions for data manipulation and plotting
 
 get_numbers <- function(df, start, end, hd, demo, stat){
@@ -25,12 +27,12 @@ plot_timeseries <- function(df){
 }
 
 
-plot_demographics <- function(df, district){
+plot_demographics <- function(df, district, covid_data){
   
   df_summarized <- df %>% 
     group_by(level) %>% 
     summarize(count = count %>% diff())
-  va_map_dat <- va_covid %>% 
+  va_map_dat <- covid_data %>% 
     group_by(health_district) %>% 
     summarize(lon = mean(longitude),
               lat = mean(latitude),

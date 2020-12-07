@@ -12,7 +12,7 @@ library(gridExtra)
 library(RColorBrewer)
 library(usmap)
 
-va_covid <- read_rds("data/va_covid")
+va_covid <- read_rds("va_covid")
 
 source("shiny_functions.R")
 
@@ -131,7 +131,7 @@ server <- function(input, output, session){
   })
   
   output$demo_breakdown <- renderPlot({
-    plot_demographics(state$trend_data, input$district)
+    plot_demographics(state$trend_data, input$district, va_covid)
   })
   
   output$arima <- renderPlot({

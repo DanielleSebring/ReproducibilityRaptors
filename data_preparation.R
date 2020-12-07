@@ -11,7 +11,7 @@ library(RSocrata)
 va_bysex  <- read.socrata("https://data.virginia.gov/resource/tdt3-q47w.json")
 va_byrace <- read.socrata("https://data.virginia.gov/resource/9sba-m86n.json")
 va_byage  <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
-va_pop    <- read_csv("data/VDH-Population_By_Health_District.csv")
+va_pop    <- read_csv("VDH-Population_By_Health_District.csv")
 
 clean_data_bysex <- function(dat_sex){
   va_bysex_clean <- janitor::clean_names(dat_sex) %>% 
@@ -73,37 +73,7 @@ merge_vadata <- function(dat_sex, dat_race, dat_age, dat_pop){
 va_complete <- merge_vadata(va_bysex, va_byrace, va_byage)
 
 # Save dataset to be loaded in shiny app
-saveRDS(va_complete, "data/va_covid")
+saveRDS(va_complete, "va_covid")
 
 
 
-va_bysex_clean <- janitor::clean_names(va_bysex) %>% 
-  filter(!is.na(health_district), sex != "Not Reported") %>% 
-  mutate(demographic = "sex") %>% 
-  rename(level = sex)
-
-va_byrace_clean <- janitor::clean_names(va_byrace) %>% 
-  filter(!is.na(health_district_or_health_district_group), race_and_ethnicity != "Not Reported") %>% 
-  mutate(demographic = "race") %>% 
-  rename(level = race_and_ethnicity, health_district = health_district_or_health_district_group)
-
-
-# Keep only data where dates overlap
-date_ranges <- intersect(va_bysex_clean$report_date, va_byrace_clean$report_date)
-
-
-# Merge sex and race datasets
-va_merged <- rbind(va_bysex_clean, va_byrace_clean) %>% 
-  filter(report_date %in% date_ranges) %>% 
-  mutate(date = lubridate::mdy(report_date)) %>% 
-  gather(key = "statistic", value = "count", number_of_cases, number_of_hospitalizations, number_of_deaths) %>% 
-  mutate(statistic = statistic %>% factor(levels = c("number_of_cases", "number_of_hospitalizations",
-                                           "number_of_deaths"),
-                                labels = c("cases", "hospitalizations", "deaths")))
-
-
-va_complete <- inner_join(va_merged, va_pop)
-
-
-# Save dataset to be loaded in shiny app
-saveRDS(va_complete, "data/va_covid")
