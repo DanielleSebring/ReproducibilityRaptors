@@ -1,6 +1,13 @@
 library(tidyverse)
+library(gt)
 
-# Shiny functions for data manipulation and plotting
+" 
+This script contains all of the functions used by the Shiny app.
+Functions are designed to either manipulate data or output plots/tables.
+
+"
+
+# Filter and return COVID data based on user-specified parameters
 
 get_numbers <- function(df, start, end, hd, demo, stat){
   
@@ -13,6 +20,7 @@ get_numbers <- function(df, start, end, hd, demo, stat){
   
 }
 
+# Create time-series plot
 
 plot_timeseries <- function(df){
   
@@ -24,13 +32,11 @@ plot_timeseries <- function(df){
   
 }
 
+# Create and plot summary table and map visual of VA health districts
 
-plot_demographics <- function(df, district){
+plot_demographics <- function(covid_data, district){
   
-  df_summarized <- df %>% 
-    group_by(level) %>% 
-    summarize(count = count %>% diff())
-  va_map_dat <- va_covid %>% 
+  va_map_dat <- covid_data %>% 
     group_by(health_district) %>% 
     summarize(lon = mean(longitude),
               lat = mean(latitude),
@@ -41,15 +47,30 @@ plot_demographics <- function(df, district){
   p <- plot_usmap("counties", include = c("VA")) + 
     geom_point(data = va_map_dat, aes(x = lon.1, y = lat.1, size = pop, color = is_district), 
                alpha = 1) +
-    scale_color_manual(values = c("orange", "red")) + 
+    scale_color_manual(values = c("#E87722", "#4169e1")) + 
     theme(legend.position = "none")
     
   print(p, vp = viewport(angle = -15))
   
 }
 
+# Fit ARIMA model based on user-specificed parameters
 
-plot_arima <- function(df, model, end_date){
+fit_arima <- function(arima_data, p, d, q, sp, sd, sq, period){
+  
+  arima_fit <- try(
+    Arima(arima_data$"sum(count)", 
+          order = c(p, d, q), 
+          seasonal = list(order = c(sp, sd, sq), period = period))
+  )
+  
+  return(arima_fit)
+  
+}
+
+# Plot ARIMA model fitting and forecasting
+
+plot_arima <- function(df, model, end_date, p, d, q, sp, sd, sq, period){
   
   future_dates <- seq(end_date, end_date + 13, by = "day")
   model_forecast <- predict(model, n.ahead = 14)
@@ -65,20 +86,26 @@ plot_arima <- function(df, model, end_date){
   
   p <- ggplot(data = fitted_df, aes(x = date, y = value, color = type)) + 
     geom_line(size = 1.3) +
+    ylim(0, NA) + 
     scale_color_manual(labels = c("fitted", "data"),
                        values = c("red", "black")) +
     theme(panel.background = element_blank()) + 
-    ylim(0, NA)
+    ggtitle(paste0("ARIMA(", p, ", ", d, ", ", q, "), (", sp, ", ", sd, ", ", sq, ")", period)) + 
+    theme(plot.title = element_text(hjust = 0.5)) +
+    ylab("count")
   
   p + geom_ribbon(data = forecast_df, aes(x = future_dates, ymin = lwr, ymax = upr), inherit.aes = F,
                   fill = "orange", alpha = 0.3) + 
     geom_line(data = forecast_df, aes(x = future_dates, y = mean), inherit.aes = F, color = "red",
               lwd = 1.3)
+  
 }
 
 
+# Function for ARIMA model diagnostic plots (residual plot, ACF and PACF plots)
 
 plot_diagnostics <- function(model){
+  
   p1 <- autoplot(residuals(model)) + 
     geom_abline(slope = 0, intercept = 0, col = "red") + 
     theme(panel.background = element_blank())
@@ -89,64 +116,67 @@ plot_diagnostics <- function(model){
   grid.arrange(p1, p2, p3, 
                layout_matrix = rbind(c(1, 1),
                                      c(2, 3)))
+  
 }
 
 
-# Create moving bar-plots
+#cumsum takes in a vector x of numeric values and returns a vector y
+#which stores the cumulative sum; y[i] is the cumulative value of x[1],x[2]
+#,...,x[i]
+cumsum <- function(x)
+{
+  y <- vector(length = length(x))
+  for (i in 1:length(y))
+  {
+    y[i] <- sum(x[1:i])
+  }
+  return(y)
+}
 
-#va_totals <- va_covid %>% 
-#  filter(demographic == "sex") %>% 
-#  group_by(health_district, date, statistic) %>% 
-#  summarize(total_count = sum(count)) %>% 
-#  group_by(date) %>% 
-#  mutate(rank = rank(-total_count),
-#         Value_lbl = paste0(" ", round(total_count))) %>% 
-#  group_by(health_district) %>% 
-#  filter(rank <=10) %>%
-#  ungroup() %>% 
-#  mutate(health_district = as.factor(health_district))
-
-
-#static_plot <- va_totals %>% 
-#  ggplot(aes(rank, group = health_district, 
-#             fill = health_district, color = health_district)) +
-#  geom_tile(aes(y = total_count/2,
-#                height = total_count,
-#                width = 0.9), alpha = 0.8, color = NA) + 
-#  geom_text(aes(y = 0, label = paste(health_district, " ")), vjust = 0.2, hjust = 1) +
-#  geom_text(aes(y = total_count, label = Value_lbl, hjust = 0)) +
-#  coord_flip(clip = "off", expand = FALSE) +
-#  scale_y_continuous(labels = scales::comma) +
-#  scale_x_reverse() +
-#  guides(color = FALSE, fill = FALSE) +
-#  theme(axis.line       = element_blank(),
-#        axis.text.x     = element_blank(),
-#        axis.text.y     = element_blank(),
-#        axis.ticks      = element_blank(),
-#        axis.title.x    = element_blank(),
-#        axis.title.y    = element_blank(),
-#        legend.position = "none",
-#        panel.background = element_blank(),
-#        panel.border = element_blank(),
-#        panel.grid.major = element_blank(),
-#        panel.grid.minor = element_blank(),
-#        panel.grid.major.x = element_line(size = 0.1, color = "grey" ),
-#        panel.grid.minor.x = element_line(size = 0.1, color = "grey" ),
-#        plot.title = element_text(size = 25, hjust = 0.5, face = "bold", colour = "grey", vjust = -1),
-#        plot.subtitle = element_text(size = 18, hjust = 0.5, face="italic", color = "grey"),
-#        plot.caption = element_text(size = 8, hjust = 0.5, face = "italic", color = "grey"),
-#        plot.background=element_blank(),
-#        plot.margin = margin(2,2, 2, 4, "cm"))
-
-#anim <- static_plot + 
-#  transition_states(date, transition_length = 1, state_length = 2) + 
-#  view_follow(fixed_x = TRUE) + 
-#  labs(title = 'COVID-19 cases over Summer 2020 : {closest_state}',  
-#       subtitle  =  "Ten countries with highest case numbers")
-
-#animate(anim, duration = 30, fps = 20,  width = 1200, height = 1000, 
-#        start_pause = 20,
-#        end_pause = 20,
-#        renderer = av_renderer("gganim.av"))
+#this function will calculate summary statistics for a specific district
+summary_given_district <- function(X, district){
+  
+  #breakup the dataframe X using the input district and then by type of
+  #statistic
+  X.district <- subset(X,health_district == district)
+  X.district.cases <- subset(X.district,statistic == "cases")
+  X.district.hospital <- subset(X.district,statistic == "hospitalizations")
+  X.district.deaths <- subset(X.district,statistic == "deaths")
+  
+  #calculate the mean cases, hospitalizations, deaths
+  mean_cases <- mean(X.district.cases$count)
+  mean_hospital <- mean(X.district.hospital$count)
+  mean_deaths <- mean(X.district.deaths$count)
+  
+  #calculate the median cases, hospitalizations, deaths 
+  median_cases <- median(X.district.cases$count)
+  median_hospital <- median(X.district.hospital$count)
+  median_deaths <- median(X.district.deaths$count)
+  
+  #calculate the standard deviation of the cases, hospitalizations, deaths 
+  sd_cases <- sd(X.district.cases$count)
+  sd_hospital <- sd(X.district.hospital$count)
+  sd_deaths <- sd(X.district.deaths$count)
+  
+  #bind the means,medians, and standard deviations as well as a description
+  #column
+  means <- rbind(mean_cases, mean_hospital,mean_deaths)
+  medians <- rbind(median_cases,median_hospital,median_deaths)
+  standard_devs <- rbind(sd_cases,sd_hospital,sd_deaths)
+  
+  description <- c("Cases", "Hospitalizations","Deaths")
+  
+  #form the final data frame, give the column names and then convert to a table
+  summary <- data.frame(cbind(description,round(means,3),round(medians,3),round(standard_devs,3)))
+  names(summary) <- c("Type","Mean","Median","Standard Deviation")
+  
+  #final_table is the final table object
+  final_table <- summary %>% 
+    gt() %>% 
+    tab_spanner(label = "Statistic", columns = vars("Mean", "Median", "Standard Deviation"))
+  
+  return(final_table)
+  
+}
 
 
